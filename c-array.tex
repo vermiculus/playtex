@@ -1,0 +1,104 @@
+% http://tex.stackexchange.com/q/169396/17423
+\documentclass{article}
+\usepackage{expl3,xparse}
+\usepackage{fancybox}
+\ExplSyntaxOn
+\keys_define:nn { brian / c-array } {
+  name         .tl_set:N = \l_brian_c_array_name_tl,
+  name-fmt     .tl_set:N = \l_brian_c_array_name_fmt_tl,
+  index-start .int_set:N = \l_brian_c_array_index_int,
+  addr-start  .int_set:N = \l_brian_c_array_addr_int,
+  addr-step   .int_set:N = \l_brian_c_array_addr_step_int,
+  addr-fmt     .tl_set:N = \l_brian_c_array_addr_fmt_tl,
+  inner-fmt    .tl_set:N = \l_brian_c_array_inner_fmt_tl,
+  top-skip    .dim_set:N = \l_brian_c_array_top_skip_dim,
+  bottom-skip .dim_set:N = \l_brian_c_array_bottom_skip_dim,
+  inner-strut  .tl_set:N = \l_brian_c_array_inner_strut_tl,
+}
+
+\cs_new:Nn \__brian_temp:n{
+  & \multicolumn{1}{c|}{
+    \l_brian_c_array_inner_fmt_tl
+    #1
+  }
+}
+
+\NewDocumentCommand \CArray { O{} m O{\rule[-2.25ex]{0pt}{6ex}}} {
+  \group_begin:
+  \keys_set:nn
+    { brian / c-array }
+    { name=arr,
+      name-fmt=\ttfamily\small,
+      index-start=0,
+      addr-start=2000,
+      addr-step=4,
+      top-skip = \medskipamount,
+      bottom-skip = 3ex,
+      inner-strut = \rule[-2.25ex]{0pt}{6ex},
+      inner-fmt = \rmfamily,
+      addr-fmt = \rmfamily,
+      #1 }
+
+  \seq_set_split:Nnn \l_tmpa_seq { , } { #2 }
+  \seq_pop_left:NN   \l_tmpa_seq \l_tmpa_tl
+  \int_set:Nn \l_tmpa_int { \seq_count:N \l_tmpa_seq }
+
+
+  \begin{tabular}{*{\int_eval:n { \seq_count:N \l_tmpa_seq + 1 }}{c}}
+    \tl_use:N \l_brian_c_array_name_fmt_tl
+    \tl_use:N \l_brian_c_array_name_tl
+    [\int_use:N \l_brian_c_array_index_int]
+    \prg_replicate:nn {\int_use:N \l_tmpa_int}
+      { 
+        &
+        \int_gincr:N \l_brian_c_array_index_int
+        \tl_use:N \l_brian_c_array_name_fmt_tl
+        \tl_use:N \l_brian_c_array_name_tl
+        [\int_use:N \l_brian_c_array_index_int]
+      }
+      \\[\l_brian_c_array_top_skip_dim]
+      \hline
+
+      \multicolumn{1}{|c|}{
+        \l_brian_c_array_inner_strut_tl
+        \l_brian_c_array_inner_fmt_tl
+        \tl_use:N \l_tmpa_tl
+      }
+      \seq_map_function:NN \l_tmpa_seq \__brian_temp:n
+      \\
+      \hline
+      \rule{0pt}{\l_brian_c_array_bottom_skip_dim}
+      \l_brian_c_array_addr_fmt_tl
+      \int_use:N \l_brian_c_array_addr_int
+      \prg_replicate:nn { \int_use:N \l_tmpa_int }
+        {
+          & \int_gadd:Nn \l_brian_c_array_addr_int
+              {
+                \int_use:N \l_brian_c_array_addr_step_int
+              }
+            \l_brian_c_array_addr_fmt_tl
+            \int_use:N \l_brian_c_array_addr_int
+        }
+  \end{tabular}
+
+  \group_end:
+}
+\ExplSyntaxOff
+
+\begin{document}
+\centering
+
+\CArray[
+addr-start=65508,
+addr-step=4,
+name=tab,
+name-fmt=\ttfamily\small,
+inner-fmt=\ttfamily,
+]{1234, 56, 1212, 33, 1434, 80, 1312, 78}
+
+\vspace{1in}
+
+\shadowbox{%
+  \CArray[inner-fmt=\ttfamily\large,name-fmt=\ttfamily]{1,2,3}%
+}
+\end{document}
